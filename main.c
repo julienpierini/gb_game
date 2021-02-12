@@ -89,7 +89,16 @@ void update_player_sprites(UBYTE key, UBYTE player_direct, UBYTE tile_flip){
     }
 }
 
-void update_display(UINT8 key){
+void update_bkg(UBYTE key, UBYTE bkg_x_pos, UBYTE bkg_y_pos){
+    if((key&J_RIGHT) || (key&J_LEFT)){
+        scroll_bkg(bkg_x_pos, 0);
+    }
+    else {
+        scroll_bkg(0, bkg_y_pos);
+    }
+}
+
+void update_display(UBYTE key){
     tile_size = TL_SIZE;
 
     if(key){
@@ -117,15 +126,6 @@ void update_display(UINT8 key){
         }
         update_bkg(key, bkg_x_pos, bkg_y_pos);
         update_player_sprites(key, player_direct, tile_flip);
-    }
-}
-
-void update_bkg(UINT8 key){
-    if((key&J_RIGHT) || (key&J_LEFT)){
-        scroll_bkg(bkg_x_pos, 0);
-    }
-    else {
-        scroll_bkg(0, bkg_y_pos);
     }
 }
 
