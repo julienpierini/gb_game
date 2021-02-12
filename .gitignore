@@ -6,3 +6,14 @@ main.map
 main.noi
 main.sym
 main.asm
+!tools/
+tools/*
+!tools/BGB/
+tools/BGB/*
+!tools/BGB/bgb.zip
+!tools/GBMB/
+tools/GBMB/*
+!tools/GBMB/gbmb18.zip
+!tools/GBTD/
+tools/GBTD/*
+!tools/GBTD/gbtd22.zip
