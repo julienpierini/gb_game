@@ -2,9 +2,10 @@
 #include <bcd.h>
 #include <gb/font.h>
 #include <stdio.h>
+#include "character.c"
 #include "assets/map.c"
 #include "assets/tiles.c"
-#include "assets/player_tiles.c"
+#include "assets/player2.c"
 
 /* screen size */
 #define MIN_SX		  0U		        /* min x (char) */
@@ -18,31 +19,30 @@
 #define TL_SIZE       8U		        /* sprite size length = height = 8 */
 
 /* tiles */
-#define TL_PL_HEAD_NB  0U		        /* tile player head nb */
-#define TL_PL_LEGS_NB  1U		        /* tile player legs nb */
-#define TL_PL_NB       8U               /* number of player tiles to load in VRAM */
+#define TL_PL_NB       24U               /* number of player tiles to load in VRAM */
 #define TL_BKG_NB      32U              /* number of background tiles to load in VRAM */
 
-/* player */
-#define PL_X		   90U		        /* player x pos (dot) */
-#define PL_Y		   70U              /* player y pos (dot) */
+/* screen */
+#define MID_X		   90U		        /* mid x pos (dot) */
+#define MID_Y		   70U              /* mid y pos (dot) */
 
 /* scrolling */
 #define PXL_SC          1U              /* nb of pixels to scroll when player is moving */
 
 extern clock_t clock();
 
+struct character player;
+
 font_t min_font;
 
-UBYTE player_direct;
-UBYTE tile_size, tile_flip;
+UBYTE character_direct;
+UBYTE tile_size, tile_init;
 UBYTE bkg_x_pos, bkg_y_pos;
 UBYTE scrolling_speed;
 UBYTE key, last_key = 0;
 UINT16 s;
-int n = 0; int frame = 0;
-int anime[3] = {7, 6, 1};
-
+BOOLEAN tile_flip;
+int n = 0, frame = 0, anime = 0, last_anime = 0;
 
 UINT16 get_s(){
     return (clock()/60);
@@ -58,70 +58,123 @@ void init_background(){
     scrolling_speed = PXL_SC;
 }
 
-void init_player(){
-    set_sprite_data( 0, TL_PL_NB, player_tiles );
-    set_sprite_tile( TL_PL_HEAD_NB, TL_PL_HEAD_NB );
-    set_sprite_tile( TL_PL_LEGS_NB, TL_PL_LEGS_NB );
-    move_sprite( TL_PL_HEAD_NB, PL_X, PL_Y );
-    move_sprite( TL_PL_LEGS_NB, PL_X, PL_Y+TL_SIZE );
+void init_player(struct character* gameCharacter, int firstTileLoaded, int tileRangeLoaded, int x, int y){
+    set_sprite_data(firstTileLoaded, tileRangeLoaded, player2);
+
+    // right
+    gameCharacter->leftSprite[0] = 0;  // 0-1
+    gameCharacter->rightSprite[0] = 2; // 2-3
+    // left
+    gameCharacter->leftSprite[1] = 0;  // 0-1
+    gameCharacter->rightSprite[1] = 2; // 2-3
+    // front
+    gameCharacter->leftSprite[2] = 4;  // 4-5
+    gameCharacter->rightSprite[2] = 6; // 6-7
+    // back
+    gameCharacter->leftSprite[3] = 8;  // 8-9
+    gameCharacter->rightSprite[3] = 10; // 10-11
+
+    // rigth/left anime
+    gameCharacter->leftSprite[4] = 12;  // 12-13
+    gameCharacter->rightSprite[4] = 14; // 14-15
+    // front anime
+    gameCharacter->leftSprite[5] = 16;  // 16-17
+    gameCharacter->rightSprite[5] = 18; // 18-19
+    // back anime
+    gameCharacter->leftSprite[6] = 20;  // 20-21
+    gameCharacter->rightSprite[6] = 22; // 22-23
+
+    gameCharacter->x = x;
+    gameCharacter->y = y;
+    
+    // init front direction
+    gameCharacter->spritesNumber[0] = 0;
+    gameCharacter->spritesNumber[1] = 1;
+    set_sprite_tile(gameCharacter->spritesNumber[0], gameCharacter->leftSprite[2]);
+    set_sprite_tile(gameCharacter->spritesNumber[1], gameCharacter->rightSprite[2]);
+    move_sprite(gameCharacter->spritesNumber[0], gameCharacter->x, gameCharacter->y );
+    move_sprite(gameCharacter->spritesNumber[1], gameCharacter->x + TL_SIZE, gameCharacter->y );
 }
 
-void reset_player_pos(UBYTE last_key){
-    // left  = 1
-    // rigth = 2
-    // up    = 4
-    // down  = 8
-    if(last_key == 1){
-        player_direct=0;
-    }
-    else if(last_key == 2){
-        player_direct=0;
-    }
-    else if(last_key == 4){
-        player_direct=2;
-    }
-    else if(last_key == 4){
-        player_direct=2;
-    }
-    else if(last_key == 8){
-        player_direct=1;
-    }
-    set_sprite_tile(TL_PL_LEGS_NB, player_direct*2+1);
-}
-
-void update_player_sprites(UBYTE key, UBYTE player_direct, UBYTE tile_flip){
-    // set head and legs sprite depending of the player direction
-    set_sprite_tile(TL_PL_HEAD_NB, player_direct*2);
-    move_sprite(TL_PL_HEAD_NB, PL_X, PL_Y); move_sprite(TL_PL_LEGS_NB, PL_X, PL_Y+TL_SIZE);
-
-    if((key&J_RIGHT) || (key&J_LEFT)){
-        // is flip
-        set_sprite_prop(TL_PL_HEAD_NB, tile_flip);
-        set_sprite_prop(TL_PL_LEGS_NB, tile_flip);
-        // legs anim lef/right
-        if((frame%7) == 0){
-            set_sprite_tile(TL_PL_LEGS_NB, anime[n]);
-            n+=1;
-            if(n==3){
-                n=0;
-            }
-        }
-        // set_sprite_tile( TL_PL_LEGS_NB, 7 );
-        // set_sprite_tile(TL_PL_LEGS_NB, 6);
-        // set_sprite_tile( TL_PL_LEGS_NB, TL_PL_LEGS_NB);
-
+void rotate_character_tiles(struct character* gameCharacter, int character_animation, BOOLEAN tile_flip){
+    // flip tiles
+    if(tile_flip){
+        set_sprite_tile(gameCharacter->spritesNumber[1], gameCharacter->leftSprite[character_animation]);
+        set_sprite_tile(gameCharacter->spritesNumber[0], gameCharacter->rightSprite[character_animation]);
+        set_sprite_prop(gameCharacter->spritesNumber[0], SP_H_FLIP);
+        set_sprite_prop(gameCharacter->spritesNumber[1], SP_H_FLIP);
     }
     else {
-        // unflip
-        set_sprite_prop(TL_PL_HEAD_NB, tile_flip);
-        set_sprite_prop(TL_PL_LEGS_NB, tile_flip);
-        // set up and down sprites
-        set_sprite_tile(TL_PL_LEGS_NB, player_direct*2+1);
+        set_sprite_tile(gameCharacter->spritesNumber[0], gameCharacter->leftSprite[character_animation]);
+        set_sprite_tile(gameCharacter->spritesNumber[1], gameCharacter->rightSprite[character_animation]);
+        set_sprite_prop(gameCharacter->spritesNumber[0], SP_H_DEF);
+        set_sprite_prop(gameCharacter->spritesNumber[1], SP_H_DEF);    
+    }
+}
+
+void reset_character_pos(UBYTE key, UBYTE last_key, struct character* gameCharacter){
+    // if character stop moving
+    // right  = 1
+    if(key == 0 && last_key == 1){
+        character_direct = 0;
+        tile_flip = FALSE;
+    }
+    // left = 2
+    else if(key == 0 && last_key == 2){
+        character_direct = 0;
+        tile_flip = TRUE;
+    }
+    // up    = 4 (back)
+    else if(key == 0 && last_key == 4){
+        character_direct = 3;
+        tile_flip = FALSE;
+    }
+    // down  = 8 (front)
+    else if(key == 0 && last_key == 8){
+        character_direct = 2;
+        tile_flip = FALSE;
+    }
+    // if the character change his direction
+    // right  = 1
+    else if(key == 1 && last_key != key){
+        character_direct = 0;
+        tile_flip = FALSE;
+    }
+    // left = 2
+    else if(key == 2 && last_key != key){
+        character_direct = 0;
+        tile_flip = TRUE;
+    }
+    // up    = 4 (back)
+    else if(key == 4 && last_key != key){
+        character_direct = 3;
+        tile_flip = FALSE;
+    }
+    // down  = 8 (front)
+    else if(key == 8 && last_key != key){
+        character_direct = 2;
+        tile_flip = FALSE;
+    }
+    rotate_character_tiles(gameCharacter, character_direct, tile_flip);
+}
+
+void update_character_sprites(struct character* gameCharacter, UBYTE character_direct, UBYTE tile_flip){
+    // set left and right sprites depending of the character direction
+    if((frame % 16) == 0){
+        if(last_anime == 0 && character_direct == 0){
+            anime = 4;
+        } else if(last_anime == 0){
+            anime = 3;
+        } else {
+            anime = 0;
+        }
+        rotate_character_tiles(gameCharacter, character_direct + anime, tile_flip);
+        last_anime = anime;
     }
 }
 
 void update_bkg(UBYTE key, UBYTE bkg_x_pos, UBYTE bkg_y_pos){
-    if((key&J_RIGHT) || (key&J_LEFT)){
+    if((key & J_RIGHT) || (key & J_LEFT)){
         scroll_bkg(bkg_x_pos, 0);
     }
     else {
@@ -129,34 +182,38 @@ void update_bkg(UBYTE key, UBYTE bkg_x_pos, UBYTE bkg_y_pos){
     }
 }
 
-void update_display(UBYTE key){
+void update_display(UBYTE key, struct character* gameCharacter){
     tile_size = TL_SIZE;
 
     if(key){
         /* set scrolling variables, player direction  */
-        if(key&J_LEFT) {
-            bkg_x_pos=-scrolling_speed;
-            player_direct=0;
+        if(key & J_RIGHT) {
+        // right
+            bkg_x_pos = scrolling_speed;
+            character_direct = 0;
             // flip horizontally the sprites
-            tile_flip=SP_H_FLIP;
-        } else if(key&J_RIGHT) {
-            bkg_x_pos=scrolling_speed;
-            player_direct=0;
+            tile_flip = FALSE;
+        } else if(key & J_LEFT) {
+        // left
+            bkg_x_pos = -scrolling_speed;
+            character_direct = 0;
             // flip back horizontally the sprites
-            tile_flip=SP_H_DEF;
-        } else if(key&J_UP) {
-            bkg_y_pos=-scrolling_speed;
-            player_direct=2;
+            tile_flip = TRUE;
+        } else if(key & J_DOWN) {
+        // front
+            bkg_y_pos = scrolling_speed;
+            character_direct = 2;
             // flip back horizontally the sprites
-            tile_flip=SP_H_DEF;
-        } else if(key&J_DOWN) {
-            bkg_y_pos=scrolling_speed;
-            player_direct=1;
+            tile_flip = FALSE;
+        } else if(key & J_UP) {
+        // back
+            bkg_y_pos =- scrolling_speed;
+            character_direct = 3;
             // flip back horizontally the sprites
-            tile_flip=SP_H_DEF;
+            tile_flip = FALSE;
         }
         update_bkg(key, bkg_x_pos, bkg_y_pos);
-        update_player_sprites(key, player_direct, tile_flip);
+        update_character_sprites(gameCharacter, character_direct, tile_flip);
     }
 }
 
@@ -169,12 +226,12 @@ void updateSwitches() {
 void main(){
     disable_interrupts();
     DISPLAY_OFF;
-    
+    SPRITES_8x16;
     font_init();
     min_font = font_load(font_min); // 36 tiles
     font_set(min_font);
 
-    init_player();
+    init_player(&player, 0, TL_PL_NB, MID_X, MID_Y);
     init_background();
     
     DISPLAY_ON;
@@ -183,17 +240,20 @@ void main(){
     while (1){
         key = joypad();
         if(key == 0 && last_key != 0){
-            reset_player_pos(last_key);
+            reset_character_pos(key, last_key, &player);
+        }
+        else if(key != 0 && last_key != key){
+            reset_character_pos(key, last_key, &player);
         }
         last_key = key;
         s = get_s();
         if((s%1) == 0){
-            frame+=1;
+            frame += 1;
             if(frame == 32){
-                frame=0;
+                frame = 0;
             }
         }
-        update_display(key);
+        update_display(key, &player);
         updateSwitches();
         wait_vbl_done();
     }
