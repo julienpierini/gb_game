@@ -137,22 +137,22 @@ void reset_character_pos(UBYTE key, UBYTE last_key, struct character* gameCharac
     // if the character change his direction
     // right  = 1
     else if(key == 1 && last_key != key){
-        character_direct = 0;
+        character_direct = 0 + 4;
         tile_flip = FALSE;
     }
     // left = 2
     else if(key == 2 && last_key != key){
-        character_direct = 0;
+        character_direct = 0 + 4;
         tile_flip = TRUE;
     }
     // up    = 4 (back)
     else if(key == 4 && last_key != key){
-        character_direct = 3;
+        character_direct = 3 + 3;
         tile_flip = FALSE;
     }
     // down  = 8 (front)
     else if(key == 8 && last_key != key){
-        character_direct = 2;
+        character_direct = 2 + 3;
         tile_flip = FALSE;
     }
     rotate_character_tiles(gameCharacter, character_direct, tile_flip);
