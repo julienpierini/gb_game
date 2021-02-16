@@ -5,7 +5,7 @@
 #include "character.c"
 #include "assets/map.c"
 #include "assets/tiles.c"
-#include "assets/player2.c"
+#include "assets/player3.c"
 
 /* screen size */
 #define MIN_SX		  0U		        /* min x (char) */
@@ -59,7 +59,7 @@ void init_background(){
 }
 
 void init_player(struct character* gameCharacter, int firstTileLoaded, int tileRangeLoaded, int x, int y){
-    set_sprite_data(firstTileLoaded, tileRangeLoaded, player2);
+    set_sprite_data(firstTileLoaded, tileRangeLoaded, player3);
 
     // right
     gameCharacter->leftSprite[0] = 0;  // 0-1
@@ -160,7 +160,7 @@ void reset_character_pos(UBYTE key, UBYTE last_key, struct character* gameCharac
 
 void update_character_sprites(struct character* gameCharacter, UBYTE character_direct, UBYTE tile_flip){
     // set left and right sprites depending of the character direction
-    if((frame % 16) == 0){
+    if((frame % 8) == 0){
         if(last_anime == 0 && character_direct == 0){
             anime = 4;
         } else if(last_anime == 0){
