@@ -41,7 +41,7 @@ UBYTE bkg_x_pos, bkg_y_pos;
 UBYTE scrolling_speed;
 UBYTE key, last_key = 0;
 UINT16 s;
-BOOLEAN tile_flip;
+BOOLEAN tile_flip, reverse_anime = FALSE;
 int n = 0, frame = 0, anime = 0, last_anime = 0;
 
 UINT16 get_s(){
@@ -165,8 +165,13 @@ void update_character_sprites(struct character* gameCharacter, UBYTE character_d
             anime = 4;
         } else if(last_anime == 0){
             anime = 3;
+        } else if((character_direct == 2 || character_direct == 3) && (reverse_anime == FALSE)){
+            anime = 3;
+            tile_flip = TRUE;
+            reverse_anime = TRUE;
         } else {
             anime = 0;
+            reverse_anime = FALSE;
         }
         rotate_character_tiles(gameCharacter, character_direct + anime, tile_flip);
         last_anime = anime;
