@@ -3,8 +3,8 @@
 
 struct character {
     UBYTE spritesNumber[2];
-    UBYTE leftSprite[7];
-    UBYTE rightSprite[7];
+    UBYTE leftSprite[6];
+    UBYTE rightSprite[6];
     UINT8 x;
     UINT8 y;
     UINT8 width;
