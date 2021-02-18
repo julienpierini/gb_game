@@ -62,7 +62,36 @@ void init_background(){
     scrolling_speed = PXL_SC;
 }
 
-void init_character(struct character* gameCharacter, int firstTileLoaded, int tileRangeLoaded, int x, int y, int initialPosition){
+int convert_direction_to_tile_number(int direction){
+    int tile_number = direction;
+    if(direction != RIGHT)
+        tile_number = direction - 1;
+    return tile_number;
+}
+
+void set_character_tiles(struct character* gameCharacter, int character_tile, BOOLEAN tile_flip){
+    // flip tiles
+    if(tile_flip){
+        set_sprite_tile(gameCharacter->spriteId + 1, gameCharacter->leftSprite[character_tile]);
+        set_sprite_tile(gameCharacter->spriteId, gameCharacter->rightSprite[character_tile]);
+        set_sprite_prop(gameCharacter->spriteId, SP_H_FLIP);
+        set_sprite_prop(gameCharacter->spriteId + 1, SP_H_FLIP);
+    }
+    else {
+        set_sprite_tile(gameCharacter->spriteId, gameCharacter->leftSprite[character_tile]);
+        set_sprite_tile(gameCharacter->spriteId + 1, gameCharacter->rightSprite[character_tile]);
+        set_sprite_prop(gameCharacter->spriteId, SP_H_DEF);
+        set_sprite_prop(gameCharacter->spriteId + 1, SP_H_DEF);    
+    }
+}
+
+void init_character(struct character* gameCharacter, int firstTileLoaded, int tileRangeLoaded, int x, int y){
+    BOOLEAN tile_flip = FALSE;
+    int init_tile_number = convert_direction_to_tile_number(gameCharacter->direction);
+
+    if(gameCharacter->direction == LEFT)
+        tile_flip = TRUE;
+
     set_sprite_data(firstTileLoaded, tileRangeLoaded, player3);
 
     for(int i = 0; i < (tileRangeLoaded/4); i++){
@@ -73,39 +102,18 @@ void init_character(struct character* gameCharacter, int firstTileLoaded, int ti
     gameCharacter->x = x;
     gameCharacter->y = y;
     
-    // init front direction
-    set_sprite_tile(gameCharacter->spriteId, gameCharacter->leftSprite[initialPosition]);
-    set_sprite_tile(gameCharacter->spriteId + 1, gameCharacter->rightSprite[initialPosition]);
+    set_character_tiles(gameCharacter, init_tile_number, tile_flip);
     move_sprite(gameCharacter->spriteId, gameCharacter->x, gameCharacter->y );
     move_sprite(gameCharacter->spriteId + 1, gameCharacter->x + TL_SIZE, gameCharacter->y );
 }
 
-void rotate_character_tiles(struct character* gameCharacter, int character_animation, BOOLEAN tile_flip){
-    // flip tiles
-    if(tile_flip){
-        set_sprite_tile(gameCharacter->spriteId + 1, gameCharacter->leftSprite[character_animation]);
-        set_sprite_tile(gameCharacter->spriteId, gameCharacter->rightSprite[character_animation]);
-        set_sprite_prop(gameCharacter->spriteId, SP_H_FLIP);
-        set_sprite_prop(gameCharacter->spriteId + 1, SP_H_FLIP);
-    }
-    else {
-        set_sprite_tile(gameCharacter->spriteId, gameCharacter->leftSprite[character_animation]);
-        set_sprite_tile(gameCharacter->spriteId + 1, gameCharacter->rightSprite[character_animation]);
-        set_sprite_prop(gameCharacter->spriteId, SP_H_DEF);
-        set_sprite_prop(gameCharacter->spriteId + 1, SP_H_DEF);    
-    }
-}
-
 void reset_character_pos(struct character* gameCharacter){
-    int direction = gameCharacter->direction;
     BOOLEAN tile_flip = FALSE;
-    // if character stop moving
-    if(gameCharacter->direction != RIGHT){
-        direction -= 1;
-        if(gameCharacter->direction == LEFT)
-            tile_flip = TRUE;
-    }
-    rotate_character_tiles(gameCharacter, direction, tile_flip);
+    int tile_number = convert_direction_to_tile_number(gameCharacter->direction);
+
+    if(gameCharacter->direction == LEFT)
+        tile_flip = TRUE;
+    set_character_tiles(gameCharacter, tile_number, tile_flip);
 }
 
 BOOLEAN toggle_bool(BOOLEAN bool){
@@ -116,11 +124,7 @@ BOOLEAN toggle_bool(BOOLEAN bool){
 }
 
 void update_character_sprites(struct character* gameCharacter){
-    int direction = gameCharacter->direction;
-    // left case
-    if(gameCharacter->direction != RIGHT){ 
-        direction -= 1;
-    }
+    int tile_number = convert_direction_to_tile_number(gameCharacter->direction);
     // left/right anime
     if((frame % 7) == 0 && (gameCharacter->direction == RIGHT || gameCharacter->direction == LEFT)){
         reverse_anime = FALSE;
@@ -142,7 +146,7 @@ void update_character_sprites(struct character* gameCharacter){
             anime = 0;
         }
     }
-    rotate_character_tiles(gameCharacter, direction + anime, reverse_anime);
+    set_character_tiles(gameCharacter, tile_number + anime, reverse_anime);
     last_anime = anime;
 }
 
@@ -157,11 +161,11 @@ void update_bkg(UBYTE key, UBYTE bkg_x_pos, UBYTE bkg_y_pos){
 
 void update_display(UBYTE key, struct character* gameCharacter){
     tile_size = TL_SIZE;
-    if(key == 0 && last_key != 0 || key != 0 && last_key != key){
     // (KEY) right  = 1 / left = 2 / up = 4 (back) / down = 8 (front)
+    if(!key && last_key < 9 || key < 9 && last_key != key)
         reset_character_pos(gameCharacter);
-    }
-    if(key){
+
+    if(key != 0 && key < 9){
         /* set scrolling variables and player direction */
         if(key & J_RIGHT) {
             bkg_x_pos = scrolling_speed;
@@ -202,7 +206,8 @@ void main(){
 
     struct character player;
     player.spriteId = 0;
-    init_character(&player, 0, TL_PL_NB, MID_X, MID_Y, 1);
+    player.direction = RIGHT;
+    init_character(&player, 0, TL_PL_NB, MID_X, MID_Y);
     
     DISPLAY_ON;
     enable_interrupts();
