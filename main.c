@@ -8,26 +8,32 @@
 #include "assets/player3.c"
 
 /* screen size */
-#define MIN_SX		  0U		        /* min x (char) */
-#define MAX_SX		  mapWidth          /* max x (char) */
-#define MIN_SY		  0U		        /* min y (char) */
-#define MAX_SY		  mapHeight	        /* max y (char) */
+#define MIN_SX          0U                  /* min x (char) */
+#define MAX_SX          mapWidth            /* max x (char) */
+#define MIN_SY          0U		            /* min y (char) */
+#define MAX_SY          mapHeight           /* max y (char) */
 
 /* sprites */
-#define SP_H_DEF	  0U		        /* sprite horizontal 0° rotation */
-#define SP_H_FLIP	  32U		        /* sprite horizontal 180° rotation */
-#define TL_SIZE       8U		        /* sprite size length = height = 8 */
+#define SP_H_DEF        0U                  /* sprite horizontal 0° rotation */
+#define SP_H_FLIP       32U                 /* sprite horizontal 180° rotation */
+#define TL_SIZE         8U                  /* sprite size length = height = 8 */
 
 /* tiles */
-#define TL_PL_NB       24U               /* number of player tiles to load in VRAM */
-#define TL_BKG_NB      32U              /* number of background tiles to load in VRAM */
+#define TL_PL_NB        24U                 /* number of player tiles to load in VRAM */
+#define TL_BKG_NB       32U                 /* number of background tiles to load in VRAM */
+
+/* direction */
+#define RIGHT           0U                  /* setup right logic value */
+#define LEFT            1U                  /* setup left logic value */
+#define DOWN            2U                  /* setup down logic value */
+#define UP              3U                  /* setup up logic value */
 
 /* screen */
-#define MID_X		   90U		        /* mid x pos (dot) */
-#define MID_Y		   70U              /* mid y pos (dot) */
+#define MID_X           90U                 /* mid x pos (dot) */
+#define MID_Y           70U                 /* mid y pos (dot) */
 
 /* scrolling */
-#define PXL_SC          1U              /* nb of pixels to scroll when player is moving */
+#define PXL_SC          1U                  /* nb of pixels to scroll when the player is moving */
 
 extern clock_t clock();
 
@@ -94,9 +100,9 @@ void reset_character_pos(struct character* gameCharacter){
     int direction = gameCharacter->direction;
     BOOLEAN tile_flip = FALSE;
     // if character stop moving
-    if(gameCharacter->direction != 0){
+    if(gameCharacter->direction != RIGHT){
         direction -= 1;
-        if(gameCharacter->direction == 1)
+        if(gameCharacter->direction == LEFT)
             tile_flip = TRUE;
     }
     rotate_character_tiles(gameCharacter, direction, tile_flip);
@@ -112,21 +118,21 @@ BOOLEAN toggle_bool(BOOLEAN bool){
 void update_character_sprites(struct character* gameCharacter){
     int direction = gameCharacter->direction;
     // left case
-    if(gameCharacter->direction != 0){ 
+    if(gameCharacter->direction != RIGHT){ 
         direction -= 1;
     }
     // left/right anime
-    if((frame % 7) == 0 && (gameCharacter->direction == 0 || gameCharacter->direction == 1)){
+    if((frame % 7) == 0 && (gameCharacter->direction == RIGHT || gameCharacter->direction == LEFT)){
         reverse_anime = FALSE;
         // reverse tile when left direction
-        if(gameCharacter->direction == 1)
+        if(gameCharacter->direction == LEFT)
             reverse_anime = TRUE;
         if(last_anime == 0)
             anime = 3;
         else 
             anime = 0;
     } // back/front anime  
-    else if((frame % 7) == 0 && (gameCharacter->direction == 2 || gameCharacter->direction == 3)){
+    else if((frame % 7) == 0 && (gameCharacter->direction == DOWN || gameCharacter->direction == UP)){
         // reverse or not anime
         if(last_anime == 0){
             anime = 3;
@@ -156,27 +162,19 @@ void update_display(UBYTE key, struct character* gameCharacter){
         reset_character_pos(gameCharacter);
     }
     if(key){
-        /* set scrolling variables, player direction  */
+        /* set scrolling variables and player direction */
         if(key & J_RIGHT) {
-        // right
             bkg_x_pos = scrolling_speed;
-            gameCharacter->direction = 0;
-            // flip horizontally the sprites
+            gameCharacter->direction = RIGHT;
         } else if(key & J_LEFT) {
-        // left
             bkg_x_pos = -scrolling_speed;
-            gameCharacter->direction = 1;
-            // flip back horizontally the sprites
+            gameCharacter->direction = LEFT;
         } else if(key & J_DOWN) {
-        // front
             bkg_y_pos = scrolling_speed;
-            gameCharacter->direction = 2;
-            // flip back horizontally the sprites
+            gameCharacter->direction = DOWN;
         } else if(key & J_UP) {
-        // back
             bkg_y_pos =- scrolling_speed;
-            gameCharacter->direction = 3;
-            // flip back horizontally the sprites
+            gameCharacter->direction = UP;
         }
         update_bkg(key, bkg_x_pos, bkg_y_pos);
         update_character_sprites(gameCharacter);
