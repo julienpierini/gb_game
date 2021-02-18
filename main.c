@@ -31,8 +31,6 @@
 
 extern clock_t clock();
 
-struct character player;
-
 font_t min_font;
 
 UBYTE character_direct;
@@ -58,54 +56,37 @@ void init_background(){
     scrolling_speed = PXL_SC;
 }
 
-void init_player(struct character* gameCharacter, int firstTileLoaded, int tileRangeLoaded, int x, int y){
+void init_character(struct character* gameCharacter, int firstTileLoaded, int tileRangeLoaded, int x, int y, int initialPosition){
     set_sprite_data(firstTileLoaded, tileRangeLoaded, player3);
 
-    // right/left
-    gameCharacter->leftSprite[0] = 0;  // 0-1
-    gameCharacter->rightSprite[0] = 2; // 2-3
-    // front
-    gameCharacter->leftSprite[1] = 4;  // 4-5
-    gameCharacter->rightSprite[1] = 6; // 6-7
-    // back
-    gameCharacter->leftSprite[2] = 8;  // 8-9
-    gameCharacter->rightSprite[2] = 10; // 10-11
-
-    // rigth/left anime
-    gameCharacter->leftSprite[3] = 12;  // 12-13
-    gameCharacter->rightSprite[3] = 14; // 14-15
-    // front anime
-    gameCharacter->leftSprite[4] = 16;  // 16-17
-    gameCharacter->rightSprite[4] = 18; // 18-19
-    // back anime
-    gameCharacter->leftSprite[5] = 20;  // 20-21
-    gameCharacter->rightSprite[5] = 22; // 22-23
+    for(int i = 0; i < (tileRangeLoaded/4); i++){
+        gameCharacter->leftSprite[i] = i * 4; 
+        gameCharacter->rightSprite[i] = i * 4 + 2; 
+    }
 
     gameCharacter->x = x;
     gameCharacter->y = y;
     
     // init front direction
-    gameCharacter->spritesNumber[0] = 0;
-    gameCharacter->spritesNumber[1] = 1;
-    set_sprite_tile(gameCharacter->spritesNumber[0], gameCharacter->leftSprite[1]);
-    set_sprite_tile(gameCharacter->spritesNumber[1], gameCharacter->rightSprite[1]);
-    move_sprite(gameCharacter->spritesNumber[0], gameCharacter->x, gameCharacter->y );
-    move_sprite(gameCharacter->spritesNumber[1], gameCharacter->x + TL_SIZE, gameCharacter->y );
+    set_sprite_tile(gameCharacter->spriteId, gameCharacter->leftSprite[initialPosition]);
+    set_sprite_tile(gameCharacter->spriteId + 1, gameCharacter->rightSprite[initialPosition]);
+    move_sprite(gameCharacter->spriteId, gameCharacter->x, gameCharacter->y );
+    move_sprite(gameCharacter->spriteId + 1, gameCharacter->x + TL_SIZE, gameCharacter->y );
 }
 
 void rotate_character_tiles(struct character* gameCharacter, int character_animation, BOOLEAN tile_flip){
     // flip tiles
     if(tile_flip){
-        set_sprite_tile(gameCharacter->spritesNumber[1], gameCharacter->leftSprite[character_animation]);
-        set_sprite_tile(gameCharacter->spritesNumber[0], gameCharacter->rightSprite[character_animation]);
-        set_sprite_prop(gameCharacter->spritesNumber[0], SP_H_FLIP);
-        set_sprite_prop(gameCharacter->spritesNumber[1], SP_H_FLIP);
+        set_sprite_tile(gameCharacter->spriteId + 1, gameCharacter->leftSprite[character_animation]);
+        set_sprite_tile(gameCharacter->spriteId, gameCharacter->rightSprite[character_animation]);
+        set_sprite_prop(gameCharacter->spriteId, SP_H_FLIP);
+        set_sprite_prop(gameCharacter->spriteId + 1, SP_H_FLIP);
     }
     else {
-        set_sprite_tile(gameCharacter->spritesNumber[0], gameCharacter->leftSprite[character_animation]);
-        set_sprite_tile(gameCharacter->spritesNumber[1], gameCharacter->rightSprite[character_animation]);
-        set_sprite_prop(gameCharacter->spritesNumber[0], SP_H_DEF);
-        set_sprite_prop(gameCharacter->spritesNumber[1], SP_H_DEF);    
+        set_sprite_tile(gameCharacter->spriteId, gameCharacter->leftSprite[character_animation]);
+        set_sprite_tile(gameCharacter->spriteId + 1, gameCharacter->rightSprite[character_animation]);
+        set_sprite_prop(gameCharacter->spriteId, SP_H_DEF);
+        set_sprite_prop(gameCharacter->spriteId + 1, SP_H_DEF);    
     }
 }
 
@@ -172,7 +153,7 @@ void update_display(UBYTE key, struct character* gameCharacter){
     tile_size = TL_SIZE;
     if(key == 0 && last_key != 0 || key != 0 && last_key != key){
     // (KEY) right  = 1 / left = 2 / up = 4 (back) / down = 8 (front)
-        reset_character_pos(&player);
+        reset_character_pos(gameCharacter);
     }
     if(key){
         /* set scrolling variables, player direction  */
@@ -211,14 +192,19 @@ void updateSwitches() {
 
 void main(){
     disable_interrupts();
+
     DISPLAY_OFF;
     SPRITES_8x16;
+
     font_init();
     min_font = font_load(font_min); // 36 tiles
     font_set(min_font);
 
-    init_player(&player, 0, TL_PL_NB, MID_X, MID_Y);
     init_background();
+
+    struct character player;
+    player.spriteId = 0;
+    init_character(&player, 0, TL_PL_NB, MID_X, MID_Y, 1);
     
     DISPLAY_ON;
     enable_interrupts();
