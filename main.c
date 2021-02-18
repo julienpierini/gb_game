@@ -10,7 +10,7 @@
 /* screen size */
 #define MIN_SX          0U                  /* min x (char) */
 #define MAX_SX          mapWidth            /* max x (char) */
-#define MIN_SY          0U		            /* min y (char) */
+#define MIN_SY          0U		              /* min y (char) */
 #define MAX_SY          mapHeight           /* max y (char) */
 
 /* sprites */
