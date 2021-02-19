@@ -10,6 +10,7 @@ struct character {
     UINT8 width;
     UINT8 height;
     UINT8 direction;
+    UINT8 speed;
 };
 
 // right/left
