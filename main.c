@@ -42,7 +42,6 @@ font_t min_font;
 UBYTE character_direct;
 UBYTE tile_size, tile_init;
 UBYTE bkg_x_pos, bkg_y_pos;
-UBYTE scrolling_speed;
 UBYTE key, last_key = 0;
 UINT16 s;
 BOOLEAN reverse_anime = FALSE;
@@ -59,7 +58,6 @@ void print_time(){
 void init_background(){
     set_bkg_data(37, TL_BKG_NB, background);
     set_bkg_tiles(0, 0, mapWidth, mapHeight, map);
-    scrolling_speed = PXL_SC;
 }
 
 int convert_direction_to_tile_number(int direction){
@@ -160,30 +158,29 @@ void update_bkg(UBYTE key, UBYTE bkg_x_pos, UBYTE bkg_y_pos){
 }
 
 void update_display(UBYTE key, struct character* gameCharacter){
-    tile_size = TL_SIZE;
     // (KEY) right  = 1 / left = 2 / up = 4 (back) / down = 8 (front)
     if(!key && last_key < 9 || key < 9 && last_key != key)
         reset_character_pos(gameCharacter);
 
-    if(key != 0 && key < 9){
+    if(key&J_RIGHT || key&J_LEFT || key & J_DOWN || key & J_UP){
         /* set scrolling variables and player direction */
         if(key & J_RIGHT) {
-            bkg_x_pos = scrolling_speed;
+            bkg_x_pos = gameCharacter->speed;
             gameCharacter->direction = RIGHT;
         } else if(key & J_LEFT) {
-            bkg_x_pos = -scrolling_speed;
+            bkg_x_pos = -gameCharacter->speed;
             gameCharacter->direction = LEFT;
         } else if(key & J_DOWN) {
-            bkg_y_pos = scrolling_speed;
+            bkg_y_pos = gameCharacter->speed;
             gameCharacter->direction = DOWN;
         } else if(key & J_UP) {
-            bkg_y_pos =- scrolling_speed;
+            bkg_y_pos =- gameCharacter->speed;
             gameCharacter->direction = UP;
         }
         update_bkg(key, bkg_x_pos, bkg_y_pos);
         update_character_sprites(gameCharacter);
+        last_key = key;
     }
-    last_key = key;
 }
 
 void updateSwitches() {
@@ -221,6 +218,10 @@ void main(){
                 frame = 0;
             }
         }
+        if(key&J_B)
+            player.speed = PXL_SC * 2;
+        else
+            player.speed = PXL_SC;
         update_display(key, &player);
         updateSwitches();
         wait_vbl_done();
