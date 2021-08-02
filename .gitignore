@@ -20,3 +20,7 @@ tools/GBMB/*
 !tools/GBTD/
 tools/GBTD/*
 !tools/GBTD/gbtd22.zip
+gbdk/examples/gb/**/*
+!gbdk/examples/gb/**/*.c
+!gbdk/examples/gb/**/*.gbr
+!gbdk/examples/gb/**/*.gbm
